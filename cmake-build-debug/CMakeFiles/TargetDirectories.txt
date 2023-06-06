@@ -1,0 +1,3 @@
+C:/Users/Iwona/CLionProjects/statki/cmake-build-debug/CMakeFiles/statki.dir
+C:/Users/Iwona/CLionProjects/statki/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Iwona/CLionProjects/statki/cmake-build-debug/CMakeFiles/rebuild_cache.dir
