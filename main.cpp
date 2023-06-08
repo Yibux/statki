@@ -2,12 +2,14 @@
 #include <vector>
 #include <random>
 #include <chrono>
+#include <unistd.h>
 
 using namespace std;
 
 class Player {
 public:
     static const int BOARD_SIZE = 30;
+    bool komputer = false;
 
     char plansza[BOARD_SIZE][BOARD_SIZE];
 
@@ -105,6 +107,10 @@ private:
 public:
     Statki(const vector<int>& dlugosciStatkow) : dlugosciStatkow(dlugosciStatkow) {}
 
+    void ustawCzyGraczToKomputer(int gracz) {
+        players[gracz].komputer = true;
+    }
+
     void rozstawStatkiRecznie(int gracz) {
         cout << "Gracz " << gracz << ", reczne rozstawienie statkow." << endl;
 
@@ -149,7 +155,14 @@ public:
             cout << "Gracz " << aktualnyGracz << ", twoj ruch." << endl;
             cout << "Wprowadz koordynaty strzalu (x, y): ";
             int x, y;
-            cin >> y >> x;
+            if(!players[1 - aktualnyGracz].komputer)
+                cin >> y >> x;
+            else {
+                srand(std::chrono::system_clock::now().time_since_epoch().count());
+                x = rand() % Player::BOARD_SIZE;
+                y = rand() % Player::BOARD_SIZE;
+                sleep(1);
+            }
 
             if (!players[1 - aktualnyGracz].czyKoordynatyPoprawne(x, y)) {
                 cout << "Nieprawidlowe koordynaty strzalu." << endl;
@@ -232,23 +245,45 @@ int main() {
 
     Statki statki(dlugosciStatkow);
 
-    int opcja;
-    cout<<"Wybierz jakie ma byc rozstawienie statkow (0 - recznie, 1 - automatyczne): ";
-    cin>>opcja;
+    int opcjaGraczy;
+    cout<<"Gra z drugim graczem - 0, gra z komputerem 1, gra komputer vs komputer 2: ";
+    cin>>opcjaGraczy;
     while (getchar()!='\n');
-    switch (opcja) {
-        case 0:
-            cout << "Rozstawienie statkow: " << endl;
-            statki.rozstawStatkiRecznie(0);
-            statki.rozstawStatkiRecznie(1);
-            break;
+
+    switch (opcjaGraczy) {
         case 1:
-            cout << "Automatyczne rozstawienie statkow: " << endl;
+            statki.ustawCzyGraczToKomputer(1);
+            break;
+        case 2:
+            statki.ustawCzyGraczToKomputer(0);
+            statki.ustawCzyGraczToKomputer(1);
             statki.rozstawStatkiAutomatycznie();
             break;
         default:
-            cout<<"Wybrano zla wartosc. Koniec programu.";
+            cout<<"Wybrano niepoprawna opcje.";
             return 1;
+    }
+
+    int opcja;
+    if(opcjaGraczy != 2) {
+        cout<<"Wybierz jakie ma byc rozstawienie statkow (0 - recznie, 1 - automatyczne): ";
+        cin>>opcja;
+        while (getchar()!='\n');
+        switch (opcja) {
+            case 0:
+                cout << "Rozstawienie statkow: " << endl;
+                statki.rozstawStatkiRecznie(0);
+                if(opcjaGraczy == 0)
+                    statki.rozstawStatkiRecznie(1);
+                break;
+            case 1:
+                cout << "Automatyczne rozstawienie statkow: " << endl;
+                statki.rozstawStatkiAutomatycznie();
+                break;
+            default:
+                cout<<"Wybrano zla wartosc. Koniec programu.";
+                return 1;
+        }
     }
 
     cout << "Rozpocznij gre!" << endl;
