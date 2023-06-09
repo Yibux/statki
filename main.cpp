@@ -28,6 +28,15 @@ public:
     void wyswietlPlansze() {
         for (int i = 0; i < BOARD_SIZE_X; ++i) {
             for (int j = 0; j < BOARD_SIZE; ++j) {
+                cout << planszaDoStrzelania[i][j] << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    void wyswietlPlanszeStatkow() {
+        for (int i = 0; i < BOARD_SIZE_X; ++i) {
+            for (int j = 0; j < BOARD_SIZE; ++j) {
                 cout << plansza[i][j] << " ";
             }
             cout << endl;
@@ -42,6 +51,12 @@ public:
         return (plansza[x][y] == '*');
     }
 
+    bool czyPoleZajete(int x, int y) {
+        if(x>=BOARD_SIZE_X || x<0 || y>=BOARD_SIZE || y<0)
+            return true;
+        return (plansza[x][y] != '*');
+    }
+
     bool czyMoznaPostawicStatek(int x, int y, int orientacja, int dlugoscStatku) {
         if (!czyKoordynatyPoprawne(x, y))
             return false;
@@ -53,11 +68,22 @@ public:
             return false;
 
         for (int i = 0; i < dlugoscStatku; ++i) {
-            if (orientacja == 0 && !czyPolePuste(x, y + i))
-                return false;
-
-            if (orientacja == 1 && !czyPolePuste(x + i, y))
-                return false;
+            if (orientacja == 0) {
+                if (!czyPolePuste(x, y + i)
+                || czyPoleZajete(x - 1, y + i)
+                || czyPoleZajete(x + 1, y + i)
+                || czyPoleZajete(x, y + i + 1)
+                || czyPoleZajete(x, y + i - 1))
+                    return false;
+            }
+            else if (orientacja == 1) {
+                if (!czyPolePuste(x + i, y)
+                || czyPoleZajete(x + i, y - 1)
+                || czyPoleZajete(x + i, y + 1)
+                || czyPoleZajete(x + i + 1, y)
+                || czyPoleZajete(x + i - 1, y))
+                    return false;
+            }
         }
 
         return true;
@@ -119,43 +145,44 @@ public:
         cout << "Gracz " << gracz << ", reczne rozstawienie statkow." << endl;
 
         for (int dlugosc : dlugosciStatkow) {
-            bool poprawneKoordynaty = false;
             int x, y, orientacja;
 
             do {
                 cout << "Podaj koordynaty dla statku o dlugosci " << dlugosc << ":" << endl;
                 cout << "Wprowadz x: ";
-                cin >> x;
+                cin >> y;
 
                 cout << "Wprowadz y: ";
-                cin >> y;
+                cin >> x;
 
                 cout << "Wprowadz orientacje (0 - pionowo, 1 - poziomo): ";
                 cin >> orientacja;
 
-                if (players[gracz].czyKoordynatyPoprawne(x, y)) {
-                    poprawneKoordynaty = true;
-                } else {
+                if (!players[gracz].czyKoordynatyPoprawne(x, y)) {
                     cout << "Niepoprawne koordynaty. Wprowadz je ponownie." << endl;
+                    continue;
                 }
             } while (!players[gracz].postawStatek(x, y, orientacja, dlugosc));
 
-            players[gracz].wyswietlPlansze();
+            players[gracz].wyswietlPlanszeStatkow();
         }
 
     }
 
-    void rozstawStatkiAutomatycznie() {
-        for (int i = 0; i < 2; ++i) {
-            players[i].automatyczneRozstawienieStatkow(dlugosciStatkow);
-        }
+    void rozstawStatkiAutomatycznie(int gracz) {
+        players[gracz].automatyczneRozstawienieStatkow(dlugosciStatkow);
     }
 
     void rozpocznijGre() {
         int aktualnyGracz = 0;
 
+        cout<<"Statki gracza 1:"<<endl;
+        players[0].wyswietlPlanszeStatkow();
+        cout<<"Statki gracza 2:"<<endl;
+        players[1].wyswietlPlanszeStatkow();
+
         while (true) {
-            cout << "Gracz " << aktualnyGracz << ", twoj ruch." << endl;
+            cout << "Gracz " << aktualnyGracz + 1 << ", twoj ruch." << endl;
             if(!players[1 - aktualnyGracz].komputer)
                 cout << "Wprowadz koordynaty strzalu (x, y): ";
             int x, y;
@@ -263,7 +290,7 @@ int main() {
     cin >> iloscRodzajowStatkow;
     while (getchar()!='\n');
     if (iloscRodzajowStatkow < 2 || iloscRodzajowStatkow > 5) {
-        cout << "Nieprawidlowa ilosc rodzajów statkow." << endl;
+        cout << "Nieprawidlowa ilosc rodzajow statkow." << endl;
         return 0;
     }
 
@@ -271,6 +298,11 @@ int main() {
     for (int i = 0; i < iloscRodzajowStatkow; ++i) {
         int dlugosc;
         cin >> dlugosc;
+        if(dlugosc < 2 || dlugosc > 5) {
+            --i;
+            cout<<"Wprowadz dlugosc miedzy 2-5."<<endl;
+            continue;
+        }
         dlugosciStatkow.push_back(dlugosc);
     }
     while (getchar()!='\n');
@@ -283,13 +315,16 @@ int main() {
     while (getchar()!='\n');
 
     switch (opcjaGraczy) {
+        case 0:
+            break;
         case 1:
             statki.ustawCzyGraczToKomputer(1);
             break;
         case 2:
             statki.ustawCzyGraczToKomputer(0);
             statki.ustawCzyGraczToKomputer(1);
-            statki.rozstawStatkiAutomatycznie();
+            statki.rozstawStatkiAutomatycznie(0);
+            statki.rozstawStatkiAutomatycznie(1);
             break;
         default:
             cout<<"Wybrano niepoprawna opcje.";
@@ -307,10 +342,13 @@ int main() {
                 statki.rozstawStatkiRecznie(0);
                 if(opcjaGraczy == 0)
                     statki.rozstawStatkiRecznie(1);
+                else if(opcjaGraczy == 1)
+                    statki.rozstawStatkiAutomatycznie(1);
                 break;
             case 1:
                 cout << "Automatyczne rozstawienie statkow: " << endl;
-                statki.rozstawStatkiAutomatycznie();
+                statki.rozstawStatkiAutomatycznie(0);
+                statki.rozstawStatkiAutomatycznie(1);
                 break;
             default:
                 cout<<"Wybrano zla wartosc. Koniec programu.";
